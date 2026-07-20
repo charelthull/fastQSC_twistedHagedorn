@@ -47,6 +47,7 @@ void read_previous(int i, int n_omega, int n_terms, int n, int n_old, QSC_R * q_
     cl_R * params_init=new cl_R[2*n_terms+1];
     cl_R params[2];
 
+    //Take care of the data that we will not be using
     for(int k=0;k<n_old-n;k++){
         for(int l=0;l<2*(n_terms+1);l++){
             input>>dummy;
@@ -59,6 +60,7 @@ void read_previous(int i, int n_omega, int n_terms, int n, int n_old, QSC_R * q_
         *outdouble<<dummy<<std::endl;
     }
 
+    //Read the data that we will use to continue computations
     for(int k=0;k<min(n_old,n);k++){
 
         input>>params[0];
@@ -72,8 +74,8 @@ void read_previous(int i, int n_omega, int n_terms, int n, int n_old, QSC_R * q_
         }
         *outdata<<std::endl;
 
-        
-        q_arr[k]=new QSC_R(params_init,params,n_terms,precision,o,false);
+        //Only partially initialize the QSC instance: As it has already been optimized in a previous run we only need the QSC_R object to hold the data conveniently for later use
+        q_arr[k]=new QSC_R(params_init,params,n_terms,precision,o,false);   
 
         input2>>dummy;
         *outdouble<<dummy<<" ";
@@ -113,11 +115,11 @@ int main(int argc, char * argv[]){
 
     cl_R * params_init = new cl_R[2*n_terms+1];     //To store initial data we feed to the optimization algorithm
 
-    cl_R * g2= new cl_R[max_interpol_order+1];      //S some temporary data for extrapolation to get initial data for the optimization
+    cl_R * g2= new cl_R[max_interpol_order+1];      //Some temporary data for extrapolation to get initial data for the optimization
     cl_R tmp_param[max_interpol_order+1];
 
 
-    QSC_R * q_arr[max_interpol_order+2]; //
+    QSC_R * q_arr[max_interpol_order+2];    //
 
     //Opening the files for data output and diagnostics.
 
@@ -163,14 +165,14 @@ int main(int argc, char * argv[]){
 
     outstream<<"\nOmega="<<double_approx(sin(pi(float_format(20))*(9+1)/(2*(19+1))))<<std::endl;
 
-
+    //If an optional argument is passed to the program, old data is loaded.
     int j=0;
     if(argc>1){
         j=std::stoi(argv[1]);
         read_previous(9,19,n_terms,max_interpol_order+1,j,q_arr,precision,"./Old/",&outstream,&outcoeffs,&outdouble);
     }
 
-            
+    //We treat the first value of coupling independently as we have to treat the case where we do not yet have data to interpolate from.
     outstream<<"\n\nPicking things back up at g="<<double_approx(params[2*j])<<"\n\n"<<std::endl;
 
     int index=min(j,max_interpol_order+1);
@@ -178,29 +180,29 @@ int main(int argc, char * argv[]){
     if(index!=0){
 
         for(int l=0;l<index;l++){
-            g2[l]=expt(q_arr[index-l-1]->get_parameters()[0],2);
+            g2[l]=expt(q_arr[index-l-1]->get_parameters()[0],2);    //Grabbing the coupling values for the data we extrapolate
         }
         for(int k=0;k<2*n_terms+1;k++){
             for(int l=0;l<index;l++){
-                tmp_param[l]= (*q_arr[index-l-1]->get_fitCoeff(k));
+                tmp_param[l]= (*q_arr[index-l-1]->get_fitCoeff(k)); //Grabbing the parameter values we extrapolate
             }
-            params_init[k]=interpol_n(tmp_param,g2,expt(params[2*j],2),float_format(precision),min(index-1,max_interpol_order),index);
+            params_init[k]=interpol_n(tmp_param,g2,expt(params[2*j],2),float_format(precision),min(index-1,max_interpol_order),index);  //extrapolating
         }
     }else{
         params_init[0]=cl_float(2.002,float_format(precision));//(2+sqrt(cl_float(3,float_format(precision))))/2;
         for(int k=1;k<2*n_terms+1;k++){
-            params_init[k]=cl_float(expt(cl_I(10),-1),float_format(precision));
+            params_init[k]=cl_float(expt(cl_I(10),-1),float_format(precision)); //Initializing with some values as we have no data yet to extrapolate
         }
     }
   
-    q_arr[index]=new QSC_R(params_init,params+2*j,n_terms,precision,&outstream);
-    q_arr[index]->optimize(max_iter,ytol,err_tol);
-    writer(q_arr[index],outcoeffs,outdouble);    
+    q_arr[index]=new QSC_R(params_init,params+2*j,n_terms,precision,&outstream); //Create a new instance
+    q_arr[index]->optimize(max_iter,ytol,err_tol);  //Starting the optimizer
+    writer(q_arr[index],outcoeffs,outdouble);    //Committing the results to the output files
 
     if(index==max_interpol_order+1){
-        delete q_arr[0];
+        delete q_arr[0];    //Delete an old instance
         for(int k=1;k<(max_interpol_order+2);k++){
-            q_arr[k-1]=q_arr[k];
+            q_arr[k-1]=q_arr[k];    
         }
     }
 

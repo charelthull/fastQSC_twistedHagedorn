@@ -1,7 +1,7 @@
 # fastQSC_twistedHagedorn
 A program for computing the Hagedorn temperature in N=4 SYM in the presence of a chemical potential for one of the R-symmetries.
 
-This is a sample of the code used in the preparation of "Twisting the Hagedorn temperature in planar N=4 super Yang-Mills" by J.Minahan, S. Ekhammar and C.Thull, available at https://arxiv.org/abs/2512.05810.
+This is a sample of the code used in the preparation of "Twisting the Hagedorn temperature in planar N=4 super Yang-Mills" by J.Minahan, S. Ekhammar and C.Thull, available at https://arxiv.org/abs/2512.05810. The inspiration to build this program in C++ and using the cln library comes from https://arxiv.org/abs/2306.12379, but the current project is a complete object oriented rewrite in an attempt to make the code more readable and easier to adapt in the future.
 
 This code is written in C++. Please use your favourite compiler to produce an executable for your system. For the compilation of this code the Class Library for Numbers is required, see https://www.ginac.de/CLN/ for download and documentation. On Linux the compilation can be done with g++ using the commmand "g++ auxmathfuncs.cpp interpolation.cpp linSolve.cpp QSC.cpp main.cpp -lcln -lm -o test.out".
 
